@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  login:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    env:
+      UI_BASE_URL: http://localhost:4200
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout Toolshop application
+        uses: actions/checkout@v4
+        with:
+          repository: testsmith-io/practice-software-testing
+          ref: main
+          path: toolshop
+
+      - name: Start Toolshop containers
+        working-directory: toolshop
+        run: docker compose -f docker-compose.yml up -d --force-recreate
+
+      - name: Install API dependencies
+        working-directory: toolshop
+        run: |
+          sleep 30
+          docker compose exec -T -u root laravel-api composer install --no-dev --optimize-autoloader --ignore-platform-req=ext-ffi
+
+      - name: Prepare Laravel writable directories
+        working-directory: toolshop
+        run: |
+          docker compose exec -T -u root laravel-api sh -c '
+            mkdir -p storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache &&
+            chown -R www-data:www-data storage bootstrap/cache &&
+            chmod -R 777 storage bootstrap/cache'
+
+      - name: Wait for database
+        working-directory: toolshop
+        run: |
+          for i in $(seq 1 30); do
+            if docker compose exec -T mariadb mysqladmin ping -h localhost -u root -proot --silent 2>/dev/null; then
+              echo "MariaDB is ready"
+              break
+            fi
+            echo "attempt $i/30 - waiting"
+            sleep 2
+          done
+
+      - name: Seed database
+        working-directory: toolshop
+        run: docker compose exec -T laravel-api php artisan migrate:refresh --seed
+
+      - name: Wait for Angular UI
+        working-directory: toolshop
+        run: |
+          for i in $(seq 1 60); do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:4200 | grep -q "200"; then
+              echo "Angular UI is ready"
+              exit 0
+            fi
+            echo "attempt $i/60 - waiting"
+            sleep 5
+          done
+          docker compose logs angular-ui
+          exit 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run login journey
+        run: npm test
+
+      - name: Toolshop container logs
+        if: failure()
+        working-directory: toolshop
+        run: docker compose logs --tail=100
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-report
+          path: reports/
+          if-no-files-found: warn

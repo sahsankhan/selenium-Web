@@ -1,0 +1,14 @@
+{
+  "name": "selenium-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Selenium register and sign-in journey against the Toolshop store.",
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/run-tests.mjs",
+    "report": "node scripts/open-report.mjs"
+  },
+  "devDependencies": {
+    "selenium-webdriver": "^4.35.0"
+  }
+}
