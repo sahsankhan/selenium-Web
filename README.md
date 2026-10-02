@@ -38,17 +38,10 @@ npm run report
 
 `npm run report` only opens the report from the last `npm test`. It does not run the test again.
 
-By default the test uses the public site. Point it at a local Toolshop instead:
-
-```powershell
-$env:UI_BASE_URL="http://localhost:4200"
-npm test
-```
-
-A failure screenshot is saved at `reports/screenshots/login-failure.png`.
+On your machine, `npm test` uses the public Toolshop site. A failure screenshot is saved at `reports/screenshots/login-failure.png`.
 
 ## CI
 
-GitHub Actions checks out [Toolshop](https://github.com/testsmith-io/practice-software-testing), starts it with Docker Compose, and runs the journey against `http://localhost:4200`. The public site is not used in CI, because Cloudflare challenges datacenter IPs and that breaks register-then-login.
+GitHub Actions checks out [Toolshop](https://github.com/testsmith-io/practice-software-testing) and starts that app in Docker for the job. The public site is not used in CI, because Cloudflare challenges datacenter IPs and that breaks register-then-login.
 
 The HTML report is uploaded as the `selenium-report` artifact.
