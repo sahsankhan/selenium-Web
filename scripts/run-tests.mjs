@@ -20,16 +20,16 @@ function writeReport(result) {
   </style>
 </head>
 <body>
-  <h1>Selenium — Toolshop register and sign in</h1>
+  <h1>Selenium — Toolshop core cases</h1>
   <p class="${passed ? 'ok' : 'bad'}">${passed ? 'Passed' : 'Failed'}</p>
-  <p>Register a new customer on Toolshop, sign in, and confirm the account menu is visible.</p>
+  <p>Catalog, product detail, search, register, sign in, rejected login, cart, and cash-on-delivery checkout.</p>
   <p>Site: ${uiBaseUrl}</p>
   <p>Exit code: ${result.status ?? 'signal'}</p>
 </body>
 </html>`;
 }
 
-const test = spawn(process.execPath, ['--test', 'tests/login-journey.test.mjs'], {
+const test = spawn(process.execPath, ['--test', '--test-concurrency=1', 'tests/login-journey.test.mjs'], {
   cwd: root,
   env: { ...process.env, UI_BASE_URL: uiBaseUrl },
   stdio: 'inherit',
